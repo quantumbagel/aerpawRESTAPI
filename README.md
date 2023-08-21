@@ -42,7 +42,7 @@ Returns:
 You need to supply the parameters to update (for example, if you only wanted to update the `description`, you could just pass the description in the JSON. Also required is the `auth_hash` key, with the hash received from the POST request or another PUT request.
 
 Returns:
-
+|Key|Description|
 |-|-|
 |`success`|Whether the POST request succeeded.|
 |`error`|A description of the error (if `success` is `false`)|
