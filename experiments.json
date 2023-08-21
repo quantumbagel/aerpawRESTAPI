@@ -1,0 +1,32 @@
+{
+  "experiments": [
+    {
+      "start_time": 23985392859,
+      "end_by": null,
+      "id": "hello_world",
+      "long_name": null,
+      "description": null,
+      "websocket_ip": "sfuisdfuidsuf",
+      "websocket_credentials": [
+        "sdfsfdjkdf",
+        "skdfjskjdfkd"
+      ],
+      "auth_hash": 93945413481649925671169472399165307235,
+      "last_updated": 1692650137.586293
+    },
+    {
+      "start_time": 23985392859,
+      "end_by": null,
+      "id": "hello_worldd",
+      "long_name": null,
+      "description": null,
+      "websocket_ip": "sfuisdsfuidsuf",
+      "websocket_credentials": [
+        "sdfssfdjkdf",
+        "skdfjsskjdfkd"
+      ],
+      "auth_hash": 242549617464550702880723109549178960624,
+      "last_updated": 1692650341.8510845
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+experiment_file: 'experiments.json' # the file to read/store experiments in
+mongodb:
+  use: true
+  connection_string: "mongodb://localhost:27017"
+  database: 'experiment_history'
+auto_kill_experiments: 7200
+

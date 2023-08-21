@@ -1,7 +1,11 @@
-import time
-import falcon
 import json
 import random
+import time
+
+import falcon
+import pymongo
+import ruamel.yaml
+
 type_specification = {  # (type, required, must_be_unique)
     "start_time": [int, True, False],
     "end_by": [int, False, False],
@@ -13,10 +17,23 @@ type_specification = {  # (type, required, must_be_unique)
 }
 sensitive_param = ['auth_hash']
 allowed_addresses = ["127.0.0.1"]
-experiments_info = {"experiments": []}
+y = ruamel.yaml.YAML()
+config = y.load(open('config.yaml'))
+experiment_file = config['experiment_file']
+with open(experiment_file) as exp:
+    experiments_info = json.load(exp)
 unique = [i for i in type_specification.keys() if type_specification[i][2]]
 api = falcon.App()
-AUTO_END = 7200  # two hours in seconds
+auto_end = config['auto_kill_experiments']  # two hours in seconds
+if config['mongodb']['use']:
+    print("[server] connecting to mongodb server...")
+    mongo_server = pymongo.MongoClient(config['mongodb']['connection_string'])
+    print('[server] done connecting')
+else:
+    print("[server] mongodb disabled, continuing")
+    mongo_server = None
+db = mongo_server.get_database(config['mongodb']['database'])
+
 
 def check_for_value(name, value):
     """
@@ -31,15 +48,20 @@ def check_for_value(name, value):
     return False, None, None
 
 
+def update_experiments():
+    with open(experiment_file, 'w') as exp:
+        json.dump(experiments_info, exp)
+
 class ExperimentInfo(object):
     """
     ExperimentInfo: The API wrapper for get/post/putting experiments
     """
+
     def check_for_late(self):
         for i, experiment in enumerate(experiments_info['experiments']):
-            print(i, experiment['last_updated'], time.time(), AUTO_END)
-            if time.time()-experiment['last_updated'] > AUTO_END:
+            if time.time() - experiment['last_updated'] > auto_end:
                 experiments_info['experiments'].pop(i)
+                update_experiments()
 
     def on_post(self, req: falcon.Request, resp: falcon.Response):
         self.check_for_late()
@@ -85,7 +107,9 @@ class ExperimentInfo(object):
         rand_hash = random.getrandbits(128)
         add_dict.update({"auth_hash": rand_hash, "last_updated": time.time()})
         experiments_info['experiments'].append(add_dict)
+        update_experiments()
         resp.text = json.dumps({"success": True, "auth_hash": rand_hash})
+        print('[server] added experiment', add_dict['id'], 'from', req.remote_addr)
 
     def on_get(self, req, resp):  # simple get, just return the experiment info
         self.check_for_late()
@@ -94,8 +118,10 @@ class ExperimentInfo(object):
             resp.text = json.dumps({"success": False, "error": "invalid_ip"})
             return
         resp.status = falcon.HTTP_201
-        send_experiments = [{j: i[j] for j in i.keys() if j not in sensitive_param} for i in experiments_info['experiments']]
+        send_experiments = [{j: i[j] for j in i.keys() if j not in sensitive_param}
+                            for i in experiments_info['experiments']]
         resp.text = json.dumps(send_experiments)
+        print('[server] sent experiments to', req.remote_addr)
 
     def on_put(self, req, resp):
         self.check_for_late()
@@ -137,6 +163,7 @@ class ExperimentInfo(object):
         update_dict.update({"auth_hash": rand_hash, "last_updated": time.time()})
         experiments_info['experiments'][c[2]] = update_dict
         resp.text = json.dumps({"success": True, "auth_hash": rand_hash})
+        print('[server] updated experiment', update_dict['id'], 'from', req.remote_addr)
 
 
 set_experiment_endpoint = ExperimentInfo()
